@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG 转盘抽奖</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      /* 渐变背景 */
+      background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    /* 圆点纹理效果 */
+    body::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      opacity: 0.15;
+      background-image: radial-gradient(circle, #fff 1px, transparent 1.5px);
+      background-size: 24px 24px;
+      z-index: 0;
+    }
+
+    #container {
+      position: relative;
+      width: 90vw;
+      max-width: 400px;
+    }
+
+    #pointer {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid red;
+      z-index: 2;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      background-color: white;
+      transition: transform 4s ease-out;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      background-color: #28a745;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:active {
+      background-color: #1e7e34;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #history {
+      margin-top: 30px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    #history h3 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    #historyList {
+      list-style: disc;
+      padding-left: 20px;
+      font-size: 16px;
+    }
+
+    /* 让主要内容在圆点纹理之上 */
+    #container, h2, #result, #history {
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎉 SVG 抽奖转盘</h2>
+  <div id="container">
+    <div id="pointer"></div>
+    <svg id="wheel" viewBox="0 0 400 400"></svg>
+  </div>
+  <button onclick="spin()">开始抽奖</button>
+  <div id="result"></div>
+  <div id="history">
+    <h3>抽奖历史：</h3>
+    <ul id="historyList"></ul>
+  </div>
+
+  <script>
+    // ✅ 奖项数组（10个奖项）
+    const prizes = [
+      { name: "看电影", probability: 0.05 },
+      { name: "吃big披萨", probability: 0.05 },
+      { name: "谢谢参与", probability: 0.05 },
+      { name: "游乐场一日游", probability: 0.05 },
+      { name: "谢谢参与", probability: 0.05 },
+      { name: "拍拍立得", probability: 0.1 },
+      { name: "小荷包一天使用权", probability: 0.1 },
+      { name: "50元红包", probability: 0.1 },
+      { name: "买蛋糕", probability: 0.1 },
+      { name: "谢谢参与", probability: 0.05 },
+      { name: "奶茶券", probability: 0.1 },
+      { name: "咖啡券", probability: 0.1 },
+      { name: "谢谢参与", probability: 0.05 },
+      { name: "定制纪念品", probability: 0.1 }
+    ];
+
+    let currentRotation = 0; // 记录当前转盘角度
+
+    const svg = document.getElementById("wheel");
+    const result = document.getElementById("result");
+    const historyList = document.getElementById("historyList");
+
+    function drawWheel() {
+      svg.innerHTML = '';
+      const total = prizes.length;
+      const anglePer = 360 / total;
+      const radius = 200;
+      const centerX = 200;
+      const centerY = 200;
+
+      prizes.forEach((prize, i) => {
+        const startAngle = i * anglePer;
+        const endAngle = startAngle + anglePer;
+        const largeArc = anglePer > 180 ? 1 : 0;
+
+        const x1 = centerX + radius * Math.cos((startAngle - 90) * Math.PI / 180);
+        const y1 = centerY + radius * Math.sin((startAngle - 90) * Math.PI / 180);
+        const x2 = centerX + radius * Math.cos((endAngle - 90) * Math.PI / 180);
+        const y2 = centerY + radius * Math.sin((endAngle - 90) * Math.PI / 180);
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        const color = `hsl(${i * (360 / total)}, 80%, 85%)`;
+        path.setAttribute("d",
+          `M${centerX},${centerY} L${x1},${y1} A${radius},${radius} 0 ${largeArc},1 ${x2},${y2} Z`);
+        path.setAttribute("fill", color);
+        svg.appendChild(path);
+
+        // 添加文字
+        const textAngle = (startAngle + endAngle) / 2;
+        const textX = centerX + (radius * 0.6) * Math.cos((textAngle - 90) * Math.PI / 180);
+        const textY = centerY + (radius * 0.6) * Math.sin((textAngle - 90) * Math.PI / 180);
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", textX);
+        text.setAttribute("y", textY);
+        text.setAttribute("fill", "#333");
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("alignment-baseline", "middle");
+
+        // 自动分行，每行最多6个字
+        const maxLen = 6;
+        const lines = [];
+        for (let j = 0; j < prize.name.length; j += maxLen) {
+          lines.push(prize.name.slice(j, j + maxLen));
+        }
+        // 字体大小根据行数调整
+        const fontSize = lines.length > 1 ? 11 : 12;
+        text.setAttribute("font-size", fontSize);
+
+        // 纵向居中
+        const lineHeight = fontSize + 2;
+        const totalHeight = lineHeight * lines.length;
+        lines.forEach((line, idx) => {
+          const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+          tspan.setAttribute("x", textX);
+          tspan.setAttribute("y", textY - totalHeight / 2 + lineHeight * (idx + 0.5));
+          tspan.textContent = line;
+          // 沿圆的法向旋转
+          tspan.setAttribute("transform", `rotate(${textAngle}, ${textX}, ${textY - totalHeight / 2 + lineHeight * (idx + 0.5)})`);
+          text.appendChild(tspan);
+        });
+        svg.appendChild(text);
+      });
+
+      // 中心圆点
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", centerX);
+      circle.setAttribute("cy", centerY);
+      circle.setAttribute("r", 10);
+      circle.setAttribute("fill", "#333");
+      svg.appendChild(circle);
+    }
+
+    function choosePrize() {
+      const totalProb = prizes.reduce((sum, p) => sum + p.probability, 0);
+      const rand = Math.random() * totalProb;
+      let cumulative = 0;
+      for (const prize of prizes) {
+        cumulative += prize.probability;
+        if (rand <= cumulative) return prize;
+      }
+      return prizes[prizes.length - 1];
+    }
+
+    function spin() {
+  const selected = choosePrize();
+  const index = prizes.findIndex(p => p.name === selected.name);
+  const anglePer = 360 / prizes.length;
+  const targetAngle = 360 - (index * anglePer + anglePer / 2); // 指针指向角度
+
+  // 计算需要旋转到的最终角度（多转几圈，且从当前角度出发）
+  const rotateRounds = 5; // 固定转5圈
+  const finalRotation = currentRotation + (rotateRounds * 360) + (targetAngle - (currentRotation % 360));
+
+  svg.style.transition = "transform 4s cubic-bezier(0.25, 1, 0.5, 1)";
+  svg.style.transform = `rotate(${finalRotation}deg)`;
+
+  currentRotation = finalRotation; // 更新当前角度
+
+  setTimeout(() => {
+    result.innerText = `🎁 恭喜你抽中了：${selected.name}`;
+    const li = document.createElement("li");
+    li.textContent = selected.name;
+    historyList.appendChild(li);
+  }, 4000);
+}
+
+    drawWheel();
+  </script>
+</body>
+</html>
