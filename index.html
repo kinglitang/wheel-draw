@@ -297,6 +297,7 @@
 
       setTimeout(() => {
         result.innerText = `🎁 恭喜你抽中了：${selected.name}`;
+        alert(`🎁 恭喜你抽中了：${selected.name}`);
         const li = document.createElement("li");
         li.textContent = selected.name;
         historyList.appendChild(li);
