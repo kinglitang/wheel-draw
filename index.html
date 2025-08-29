@@ -176,7 +176,32 @@
 
     // 可后台修改抽奖次数
     let maxChance = 1; // 默认1次，可后台修改
-    let chance = maxChance;
+
+    // 简单身份识别：本地生成 userId
+    function getUserId() {
+      let uid = localStorage.getItem('wheel_user_id');
+      if (!uid) {
+        uid = 'u_' + Math.random().toString(36).slice(2) + Date.now();
+        localStorage.setItem('wheel_user_id', uid);
+      }
+      return uid;
+    }
+    const userId = getUserId();
+
+    // 读取/保存抽奖次数
+    function getUserChance() {
+      const val = localStorage.getItem('wheel_chance_' + userId);
+      if (val === null) {
+        localStorage.setItem('wheel_chance_' + userId, maxChance);
+        return maxChance;
+      }
+      return parseInt(val, 10);
+    }
+    function setUserChance(val) {
+      localStorage.setItem('wheel_chance_' + userId, val);
+    }
+
+    let chance = getUserChance();
 
     const spinBtn = document.getElementById("spinBtn");
     const chanceDiv = document.getElementById("chance");
@@ -313,7 +338,8 @@
     drawWheel();
     updateChanceDisplay();
 
-    // 后台可通过 maxChance 变量修改抽奖次数
+    // 后台可通过 maxChance 变量修改抽奖次数666
+  
     // 例如：maxChance = 3; chance = maxChance; updateChanceDisplay();
   </script>
 </body>
