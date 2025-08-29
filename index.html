@@ -141,6 +141,33 @@
       { name: "定制纪念品", probability: 0.1 }
     ];
 
+    // 记录原始概率
+    const originalProbabilities = prizes.map(p => p.probability);
+    let isFirstSpin = true;
+
+    function boostFirstPrize(prizes, originalProbabilities, prizeName, boostValue) {
+      const targetIndex = prizes.findIndex(p => p.name === prizeName);
+      if (targetIndex !== -1) {
+        prizes[targetIndex].probability = boostValue;
+        const remainProb = 1 - boostValue;
+        let sumOther = 0;
+        prizes.forEach((p, i) => {
+          if (i !== targetIndex) sumOther += originalProbabilities[i];
+        });
+        prizes.forEach((p, i) => {
+          if (i !== targetIndex) {
+            p.probability = originalProbabilities[i] / sumOther * remainProb;
+          }
+        });
+      }
+    }
+
+    function restoreProbabilities(prizes, originalProbabilities) {
+      prizes.forEach((p, i) => {
+        p.probability = originalProbabilities[i];
+      });
+    }
+
     let currentRotation = 0; // 记录当前转盘角度
 
     const svg = document.getElementById("wheel");
@@ -245,6 +272,12 @@
         alert("请联系煮啵获取次数");
         return;
       }
+
+      // 第一次抽奖概率提升
+      if (isFirstSpin) {
+        boostFirstPrize(prizes, originalProbabilities, "谢谢参与", 1);
+      }
+
       chance--;
       updateChanceDisplay();
 
@@ -268,6 +301,12 @@
         li.textContent = selected.name;
         historyList.appendChild(li);
       }, 4000);
+
+      // 恢复原始概率
+      if (isFirstSpin) {
+        restoreProbabilities(prizes, originalProbabilities);
+        isFirstSpin = false;
+      }
     }
 
     drawWheel();
