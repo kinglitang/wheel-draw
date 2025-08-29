@@ -126,7 +126,7 @@
     // ✅ 奖项数组（10个奖项）
     const prizes = [
       { name: "看电影", probability: 0.05 },
-      { name: "吃big披萨", probability: 0.05 },
+      { name: "吃big披萨", probability: 0.1 },
       { name: "谢谢参与", probability: 0.05 },
       { name: "游乐场一日游", probability: 0.05 },
       { name: "谢谢参与", probability: 0.05 },
@@ -135,11 +135,38 @@
       { name: "50元红包", probability: 0.1 },
       { name: "买蛋糕", probability: 0.1 },
       { name: "谢谢参与", probability: 0.05 },
-      { name: "奶茶券", probability: 0.1 },
-      { name: "咖啡券", probability: 0.1 },
+      { name: "吃云贵川", probability: 0.1 },
+      { name: "去沈阳玩一天", probability: 0.05 },
       { name: "谢谢参与", probability: 0.05 },
-      { name: "定制纪念品", probability: 0.1 }
+      { name: "任意要求一次", probability: 0.05 }
     ];
+
+    // 记录原始概率
+    const originalProbabilities = prizes.map(p => p.probability);
+    let isFirstSpin = true;
+
+    function boostFirstPrize(prizes, originalProbabilities, prizeName, boostValue) {
+      const targetIndex = prizes.findIndex(p => p.name === prizeName);
+      if (targetIndex !== -1) {
+        prizes[targetIndex].probability = boostValue;
+        const remainProb = 1 - boostValue;
+        let sumOther = 0;
+        prizes.forEach((p, i) => {
+          if (i !== targetIndex) sumOther += originalProbabilities[i];
+        });
+        prizes.forEach((p, i) => {
+          if (i !== targetIndex) {
+            p.probability = originalProbabilities[i] / sumOther * remainProb;
+          }
+        });
+      }
+    }
+
+    function restoreProbabilities(prizes, originalProbabilities) {
+      prizes.forEach((p, i) => {
+        p.probability = originalProbabilities[i];
+      });
+    }
 
     let currentRotation = 0; // 记录当前转盘角度
 
@@ -149,7 +176,32 @@
 
     // 可后台修改抽奖次数
     let maxChance = 1; // 默认1次，可后台修改
-    let chance = maxChance;
+
+    // 简单身份识别：本地生成 userId
+    function getUserId() {
+      let uid = localStorage.getItem('wheel_user_id');
+      if (!uid) {
+        uid = 'u_' + Math.random().toString(36).slice(2) + Date.now();
+        localStorage.setItem('wheel_user_id', uid);
+      }
+      return uid;
+    }
+    const userId = getUserId();
+
+    // 读取/保存抽奖次数
+    function getUserChance() {
+      const val = localStorage.getItem('wheel_chance_' + userId);
+      if (val === null) {
+        localStorage.setItem('wheel_chance_' + userId, maxChance);
+        return maxChance;
+      }
+      return parseInt(val, 10);
+    }
+    function setUserChance(val) {
+      localStorage.setItem('wheel_chance_' + userId, val);
+    }
+
+    let chance = getUserChance();
 
     const spinBtn = document.getElementById("spinBtn");
     const chanceDiv = document.getElementById("chance");
@@ -238,6 +290,9 @@
 
     function updateChanceDisplay() {
       chanceDiv.innerText = `剩余抽奖次数：${chance}`;
+      spinBtn.disabled = chance <= 0;
+      spinBtn.style.opacity = chance <= 0 ? 0.5 : 1;
+      spinBtn.style.cursor = chance <= 0 ? "not-allowed" : "pointer";
     }
 
     function spin() {
@@ -245,7 +300,14 @@
         alert("请联系煮啵获取次数");
         return;
       }
+
+      // 第一次抽奖概率提升
+      if (isFirstSpin) {
+        boostFirstPrize(prizes, originalProbabilities, "谢谢参与", 1);
+      }
+
       chance--;
+      setUserChance(chance);
       updateChanceDisplay();
 
       const selected = choosePrize();
@@ -264,17 +326,24 @@
 
       setTimeout(() => {
         result.innerText = `🎁 恭喜你抽中了：${selected.name}`;
+        alert(`🎁 恭喜你抽中了：${selected.name}`);
         const li = document.createElement("li");
         li.textContent = selected.name;
         historyList.appendChild(li);
       }, 4000);
+
+      // 恢复原始概率
+      if (isFirstSpin) {
+        restoreProbabilities(prizes, originalProbabilities);
+        isFirstSpin = false;
+      }
     }
 
     drawWheel();
     updateChanceDisplay();
 
     // 后台可通过 maxChance 变量修改抽奖次数
-    // 例如：maxChance = 3; chance = maxChance; updateChanceDisplay();
+    // 例如：maxChance = 3; chance = maxChance; setUserChance(chance); updateChanceDisplay();
   </script>
 </body>
 </html>
