@@ -290,6 +290,9 @@
 
     function updateChanceDisplay() {
       chanceDiv.innerText = `剩余抽奖次数：${chance}`;
+      spinBtn.disabled = chance <= 0;
+      spinBtn.style.opacity = chance <= 0 ? 0.5 : 1;
+      spinBtn.style.cursor = chance <= 0 ? "not-allowed" : "pointer";
     }
 
     function spin() {
@@ -304,6 +307,7 @@
       }
 
       chance--;
+      setUserChance(chance);
       updateChanceDisplay();
 
       const selected = choosePrize();
@@ -338,9 +342,8 @@
     drawWheel();
     updateChanceDisplay();
 
-    // 后台可通过 maxChance 变量修改抽奖次数666
-  
-    // 例如：maxChance = 3; chance = maxChance; updateChanceDisplay();
+    // 后台可通过 maxChance 变量修改抽奖次数
+    // 例如：maxChance = 3; chance = maxChance; setUserChance(chance); updateChanceDisplay();
   </script>
 </body>
 </html>
