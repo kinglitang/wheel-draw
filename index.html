@@ -114,7 +114,8 @@
     <div id="pointer"></div>
     <svg id="wheel" viewBox="0 0 400 400"></svg>
   </div>
-  <button onclick="spin()">开始抽奖</button>
+  <button id="spinBtn" onclick="spin()">开始抽奖</button>
+  <div id="chance" style="margin-top:10px;font-size:16px;color:#555;"></div>
   <div id="result"></div>
   <div id="history">
     <h3>抽奖历史：</h3>
@@ -145,6 +146,13 @@
     const svg = document.getElementById("wheel");
     const result = document.getElementById("result");
     const historyList = document.getElementById("historyList");
+
+    // 可后台修改抽奖次数
+    let maxChance = 1; // 默认1次，可后台修改
+    let chance = maxChance;
+
+    const spinBtn = document.getElementById("spinBtn");
+    const chanceDiv = document.getElementById("chance");
 
     function drawWheel() {
       svg.innerHTML = '';
@@ -228,30 +236,45 @@
       return prizes[prizes.length - 1];
     }
 
+    function updateChanceDisplay() {
+      chanceDiv.innerText = `剩余抽奖次数：${chance}`;
+    }
+
     function spin() {
-  const selected = choosePrize();
-  const index = prizes.findIndex(p => p.name === selected.name);
-  const anglePer = 360 / prizes.length;
-  const targetAngle = 360 - (index * anglePer + anglePer / 2); // 指针指向角度
+      if (chance <= 0) {
+        alert("请联系煮啵获取次数");
+        return;
+      }
+      chance--;
+      updateChanceDisplay();
 
-  // 计算需要旋转到的最终角度（多转几圈，且从当前角度出发）
-  const rotateRounds = 5; // 固定转5圈
-  const finalRotation = currentRotation + (rotateRounds * 360) + (targetAngle - (currentRotation % 360));
+      const selected = choosePrize();
+      const index = prizes.findIndex(p => p.name === selected.name);
+      const anglePer = 360 / prizes.length;
+      const targetAngle = 360 - (index * anglePer + anglePer / 2); // 指针指向角度
 
-  svg.style.transition = "transform 4s cubic-bezier(0.25, 1, 0.5, 1)";
-  svg.style.transform = `rotate(${finalRotation}deg)`;
+      // 计算需要旋转到的最终角度（多转几圈，且从当前角度出发）
+      const rotateRounds = 5; // 固定转5圈
+      const finalRotation = currentRotation + (rotateRounds * 360) + (targetAngle - (currentRotation % 360));
 
-  currentRotation = finalRotation; // 更新当前角度
+      svg.style.transition = "transform 4s cubic-bezier(0.25, 1, 0.5, 1)";
+      svg.style.transform = `rotate(${finalRotation}deg)`;
 
-  setTimeout(() => {
-    result.innerText = `🎁 恭喜你抽中了：${selected.name}`;
-    const li = document.createElement("li");
-    li.textContent = selected.name;
-    historyList.appendChild(li);
-  }, 4000);
-}
+      currentRotation = finalRotation; // 更新当前角度
+
+      setTimeout(() => {
+        result.innerText = `🎁 恭喜你抽中了：${selected.name}`;
+        const li = document.createElement("li");
+        li.textContent = selected.name;
+        historyList.appendChild(li);
+      }, 4000);
+    }
 
     drawWheel();
+    updateChanceDisplay();
+
+    // 后台可通过 maxChance 变量修改抽奖次数
+    // 例如：maxChance = 3; chance = maxChance; updateChanceDisplay();
   </script>
 </body>
 </html>
