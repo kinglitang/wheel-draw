@@ -153,7 +153,7 @@ Modify in the `spin()` function:
 
 ```javascript
 if (isFirstSpin) {
-  boostFirstPrize(prizes, originalProbabilities, "谢谢参与", 1);  // 第二个参数是目标奖项，第三个参数是概率
+  boostFirstPrize(prizes, originalProbabilities, "谢谢参与", 1);  // 第三个参数是目标奖项，第四个参数是概率
 }
 ```
 
